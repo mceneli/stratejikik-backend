@@ -13,7 +13,7 @@ const userSchema = new Schema({
   password: {
     type: String,
     required: true,
-    unique: true,
+    unique: false,
     trim: true,
     minlength: 3
   },
