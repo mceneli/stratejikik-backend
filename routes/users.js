@@ -15,26 +15,73 @@ router.route('/').get((req, res) => {
 });
 
 router.route('/add').post((req, res) => {
-  const username = req.body.username;
-  const password = req.body.password;
+  const username = req.body.username.toLowerCase();
+  const password = bcrypt.hash(req.body.password,10);
 
-  const newUser = new User({username,password});
+  const dbUser = new User({username,password});
 
-  newUser.save()
+  dbUser.save()
     .then(() => res.json('User added!'))
     .catch(err => res.status(400).json('Error: ' + err));
 });
 
-router.route('/login/:username').get(async(req, res) => {
-  //console.log("usname",req.params.username);
-  //const username = req.body.username;
-  //const password = req.body.password;
+router.route('/login/:username').post(async(req, res) => {
+  const userLoggingIn = req.body;
+ await User.findOne({ 'username': userLoggingIn.username })
+ .then(dbUser => {
+  if(!dbUser){
+   return res.json({
+    message:"Hatalı Kullanıcı Adı"
+   })
+  }
+  bcrypt.compare(userLoggingIn.password,dbUser.password)
+  .then(isCorrect => {
+   if(isCorrect){
+    const payload = {
+     id:dbUser._id,
+     username:dbUser.username,
+    }
+    jwt.sign(
+     payload,
+     process.env.JWT_SECRET,
+     {expiresIn:86400},
+     (err,token)=>{
+      if(err) return res.json({message:err})
+      return res.json({
+       message:"Basarili",
+       token:token
+      })
+     }
+    )
 
-  //const newUser = new User({username,password});
- await User.findOne({ 'username': req.params.username })
- .then(user => res.json(user))
- .catch(err => res.status(400).json('Error: ' + err));
+   }else{
+    return res.json({message:"Kullanıcı Adı/Şifre hatalı"})
+   }
+  })
+ })
+});
 
+function verifyJwt(req,res,next){
+ const token = req.headers["x-access-token"]?.split(' ')[1]
+
+ if(token){
+  jwt.verify(token,"asd",(err,decoded) => {
+   if(err) return res.json({
+                  isLoggedIn:false,
+                  message:"failed to auth"
+                  })
+   req.user={};
+   req.user.id=decoded.id;
+   req.user.username=decoded.username;
+   next()
+  })
+ }else{
+  res.json({message:"incorrect token",isLoggedIn:false})
+ }
+}
+
+router.route('/getUsername').get((req, res) => {
+  res.json({isLoggedIn:true,username:req.user.username})
 });
 
 module.exports = router;

@@ -1,0 +1,3 @@
+const SESS_NAME = 'sid';
+const SESS_SECRET = 'SECRETKEY46583TOGT';
+const SESS_LIFETIME = 1000 * 60 * 60 * 2;
