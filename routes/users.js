@@ -15,8 +15,11 @@ router.route('/').get((req, res) => {
 });
 
 router.route('/add').post((req, res) => {
-  const username = req.body.username.toLowerCase();
-  const password = bcrypt.hash(req.body.password,10);
+  console.log("register:"+req.body.username);
+  const username = req.body.username;
+  const password = req.body.password;
+
+  console.log("pass:"+password);
 
   const dbUser = new User({username,password});
 
@@ -25,7 +28,8 @@ router.route('/add').post((req, res) => {
     .catch(err => res.status(400).json('Error: ' + err));
 });
 
-router.route('/login/:username').post(async(req, res) => {
+router.route('/login').post(async(req, res) => {
+  console.log("login:"+req.body);
   const userLoggingIn = req.body;
  await User.findOne({ 'username': userLoggingIn.username })
  .then(dbUser => {
@@ -34,7 +38,8 @@ router.route('/login/:username').post(async(req, res) => {
     message:"Hatalı Kullanıcı Adı"
    })
   }
-  bcrypt.compare(userLoggingIn.password,dbUser.password)
+  console.log(userLoggingIn.password+" "+dbUser.password);
+  bcrypt.compare(userLoggingIn.password,dbUser.password || 1)
   .then(isCorrect => {
    if(isCorrect){
     const payload = {
