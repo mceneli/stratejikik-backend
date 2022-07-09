@@ -1,8 +1,8 @@
 const router = require('express').Router();
 let User = require('../models/user.model');
 const bcrypt = require("bcryptjs");
+var salt = bcrypt.genSaltSync(10);
 const Joi = require("joi");
-
 const express = require('express');
 const cookieParser = require("cookie-parser");
 const sessions = require('express-session');
@@ -17,7 +17,7 @@ router.route('/').get((req, res) => {
 router.route('/add').post((req, res) => {
   console.log("register:"+req.body.username);
   const username = req.body.username;
-  const password = req.body.password;
+  const password = bcrypt.hashSync(req.body.password, salt);
 
   console.log("pass:"+password);
 
@@ -39,9 +39,8 @@ router.route('/login').post(async(req, res) => {
    })
   }
   console.log(userLoggingIn.password+" "+dbUser.password);
-  //bcrypt.compare(userLoggingIn.password,dbUser.password)
-  //.then(isCorrect => {
-   if(true){
+  var isCorrect=bcrypt.compareSync(userLoggingIn.password, dbUser.password);
+   if(isCorrect){
     const payload = {
      id:dbUser._id,
      username:dbUser.username,
@@ -57,7 +56,7 @@ router.route('/login').post(async(req, res) => {
        console.log("token "+token);
        return res.json({
        message:"Basarili",
-       token:token
+       token:"Bearer "+token
       })
      })
 
@@ -65,31 +64,7 @@ router.route('/login').post(async(req, res) => {
     console.log("yanlis sifre")
     return res.json({message:"Kullanıcı Adı/Şifre hatalı"})
    }
-  //})
  })
-});
-
-function verifyJwt(req,res,next){
- const token = req.headers["x-access-token"]?.split(' ')[1]
-
- if(token){
-  jwt.verify(token,"asd",(err,decoded) => {
-   if(err) return res.json({
-                  isLoggedIn:false,
-                  message:"failed to auth"
-                  })
-   req.user={};
-   req.user.id=decoded.id;
-   req.user.username=decoded.username;
-   next()
-  })
- }else{
-  res.json({message:"incorrect token",isLoggedIn:false})
- }
-}
-
-router.route('/getUsername').get((req, res) => {
-  res.json({isLoggedIn:true,username:req.user.username})
 });
 
 module.exports = router;
